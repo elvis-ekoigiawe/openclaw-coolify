@@ -7,10 +7,8 @@ services:
     environment:
       REGISTRY_HTTP_SECRET: ${SERVICE_BASE64_REGISTRY}
   openclaw:
-    build:
-      context: .
-      args:
-        - OPENCLAW_BETA=${OPENCLAW_BETA:-false}
+    # CHANGED: Using pre-built image instead of building from source
+    image: 1panel/openclaw:latest
     restart: on-failure:10
     ulimits:
       nofile:
