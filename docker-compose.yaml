@@ -120,8 +120,8 @@ services:
     depends_on:
       - docker-proxy
 
-    # Proper command for pre-built image
-    command: ["node", "dist/index.js", "gateway", "--bind", "lan", "--port", "18789"]
+    # FIXED: Added --allow-unconfigured flag to allow startup without config file
+    command: ["node", "dist/index.js", "gateway", "--bind", "lan", "--port", "18789", "--allow-unconfigured"]
     
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:18789/"]
