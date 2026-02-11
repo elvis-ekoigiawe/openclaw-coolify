@@ -6,8 +6,9 @@ services:
       - registry-data:/var/lib/registry
     environment:
       REGISTRY_HTTP_SECRET: ${SERVICE_BASE64_REGISTRY}
+      
   openclaw:
-    # CHANGED: Using pre-built image instead of building from source
+    # Using pre-built image instead of building from source
     image: 1panel/openclaw:latest
     restart: on-failure:10
     ulimits:
@@ -22,26 +23,32 @@ services:
       PORT: 18789
       NODE_ENV: production
       NODE_OPTIONS: '--max-old-space-size=4096'
-      HOME: /data
+      HOME: /home/node
       TERM: xterm-256color
       # Persistence: Command History
-      HISTFILE: /data/.bash_history
+      HISTFILE: /home/node/.bash_history
       HISTSIZE: 50000
       HISTSAVE: 50000
       HISTCONTROL: ignoreboth
-      XDG_CONFIG_HOME: /data/.config
-      XDG_DATA_HOME: /data/.local/share
-      XDG_CACHE_HOME: /data/.cache
-      NPM_CONFIG_CACHE: /data/.npm
-      BUN_INSTALL: /data/.bun
+      XDG_CONFIG_HOME: /home/node/.config
+      XDG_DATA_HOME: /home/node/.local/share
+      XDG_CACHE_HOME: /home/node/.cache
+      NPM_CONFIG_CACHE: /home/node/.npm
+      BUN_INSTALL: /home/node/.bun
       # Map OpenClaw vars
       OPENCLAW_GATEWAY_BIND: lan
       OPENCLAW_GATEWAY_PORT: ${OPENCLAW_GATEWAY_PORT:-18789}
       # Tell the binary where to look for state/config
-      OPENCLAW_STATE_DIR: /data/.openclaw
-      OPENCLAW_WORKSPACE: /data/openclaw-workspace
+      OPENCLAW_STATE_DIR: /home/node/.openclaw
+      OPENCLAW_WORKSPACE: /home/node/.openclaw/workspace
 
-      # API Keys injected from .env or Coolify
+      # ========================================
+      # AI PROVIDER API KEYS
+      # ========================================
+      # OpenRouter (Added for unified access to multiple models)
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+      
+      # Other AI Providers (Optional - can be used alongside OpenRouter)
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       MINIMAX_API_KEY: ${MINIMAX_API_KEY}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
@@ -49,41 +56,63 @@ services:
       KIMI_API_KEY: ${KIMI_API_KEY}
       OPENCODE_API_KEY: ${OPENCODE_API_KEY}
       MOONSHOT_API_KEY: ${KIMI_API_KEY}
+      
+      # Set primary model (Optional - defaults to best available)
+      # Examples for OpenRouter:
+      # - openrouter/anthropic/claude-3.5-sonnet
+      # - openrouter/google/gemini-2.5-flash
+      # - openrouter/meta-llama/llama-3.3-70b-instruct
+      # - openrouter/deepseek/deepseek-chat
+      OPENCLAW_PRIMARY_MODEL: ${OPENCLAW_PRIMARY_MODEL:-openrouter/anthropic/claude-3.5-sonnet}
+      
+      # ========================================
+      # MESSAGING CHANNELS
+      # ========================================
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
       SANDBOX_CONTAINER: ${SANDBOX_CONTAINER:-false}
       
-      # Optional integrations
+      # ========================================
+      # OPTIONAL INTEGRATIONS
+      # ========================================
       GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY}
       NANOBANANA_API_KEY: ${NANOBANANA_API_KEY}
       ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY}
 
+      # ========================================
+      # COOLIFY INTEGRATION
+      # ========================================
       SERVICE_URL_OPENCLAW_18789: null
       SERVICE_URL_OPENCLAWWEBHOOK_8788: null
       BASE_URL: 'https://${SERVICE_FQDN_OPENCLAW}'
       PUBLIC_URL: 'https://${SERVICE_FQDN_OPENCLAW}'
-      # Bootstrap controls
+      
+      # ========================================
+      # GATEWAY SETTINGS
+      # ========================================
       OPENCLAW_AUTO_BOOTSTRAP: "1"
       OPENCLAW_PRINT_ACCESS: "1"
       GATEWAY_TRUSTED_PROXIES: '*'
-      # Fix for EMFILE/Inotify issues in Docker
       CHOKIDAR_USEPOLLING: "true"
-      # Public URL Access
 
+      # ========================================
+      # CLOUDFLARE & DEPLOYMENT
+      # ========================================
       CF_TUNNEL_TOKEN: ${CF_TUNNEL_TOKEN}
-      # Deployment & Git
       VERCEL_ORG_ID: ${VERCEL_ORG_ID}
       VERCEL_PROJECT_ID: ${VERCEL_PROJECT_ID}
       VERCEL_TOKEN: ${VERCEL_TOKEN}
       GITHUB_TOKEN: ${GITHUB_TOKEN}
       GITHUB_USERNAME: ${GITHUB_USERNAME}
       GITHUB_EMAIL: ${GITHUB_EMAIL}
-      # Optional
+      
+      # ========================================
+      # MISC
+      # ========================================
       OPENCLAW_BETA: ${OPENCLAW_BETA:-false}
 
     volumes:
-      - openclaw-data:/data
-      - openclaw-config:/root/.openclaw
-      - openclaw-workspace:/root/openclaw-workspace
+      - openclaw-config:/home/node/.openclaw
+      - openclaw-workspace:/home/node/.openclaw/workspace
 
       # Secure: Socket mount removed in favor of proxy
       # - /var/run/docker.sock:/var/run/docker.sock
@@ -91,7 +120,9 @@ services:
     depends_on:
       - docker-proxy
 
-    command: ["bash", "/app/scripts/bootstrap.sh"]
+    # Proper command for pre-built image
+    command: ["node", "dist/index.js", "gateway", "--bind", "lan", "--port", "18789"]
+    
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:18789/"]
       interval: 30s
@@ -133,7 +164,6 @@ services:
       - SETUID
 
 volumes:
-  openclaw-data:
   openclaw-config:
   openclaw-workspace:
   searxng-data:
