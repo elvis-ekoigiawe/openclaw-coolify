@@ -15,6 +15,10 @@ services:
     # FIX: Run as root to avoid permission issues
     user: "0:0"
     
+    # CRITICAL: Expose port so Coolify can route traffic
+    ports:
+      - "18789:18789"
+    
     ulimits:
       nofile:
         soft: 65535
@@ -133,6 +137,11 @@ services:
       timeout: 10s
       retries: 3
       start_period: 120s
+    
+    # Coolify labels for proper routing
+    labels:
+      - "coolify.managed=true"
+      - "coolify.version=1"
 
   docker-proxy:
     image: tecnativa/docker-socket-proxy:latest
