@@ -11,6 +11,10 @@ services:
     # Using pre-built image instead of building from source
     image: 1panel/openclaw:latest
     restart: on-failure:10
+    
+    # FIX: Run as root to avoid permission issues
+    user: "0:0"
+    
     ulimits:
       nofile:
         soft: 65535
@@ -23,24 +27,24 @@ services:
       PORT: 18789
       NODE_ENV: production
       NODE_OPTIONS: '--max-old-space-size=4096'
-      HOME: /home/node
+      HOME: /root
       TERM: xterm-256color
       # Persistence: Command History
-      HISTFILE: /home/node/.bash_history
+      HISTFILE: /root/.bash_history
       HISTSIZE: 50000
       HISTSAVE: 50000
       HISTCONTROL: ignoreboth
-      XDG_CONFIG_HOME: /home/node/.config
-      XDG_DATA_HOME: /home/node/.local/share
-      XDG_CACHE_HOME: /home/node/.cache
-      NPM_CONFIG_CACHE: /home/node/.npm
-      BUN_INSTALL: /home/node/.bun
+      XDG_CONFIG_HOME: /root/.config
+      XDG_DATA_HOME: /root/.local/share
+      XDG_CACHE_HOME: /root/.cache
+      NPM_CONFIG_CACHE: /root/.npm
+      BUN_INSTALL: /root/.bun
       # Map OpenClaw vars
       OPENCLAW_GATEWAY_BIND: lan
       OPENCLAW_GATEWAY_PORT: ${OPENCLAW_GATEWAY_PORT:-18789}
       # Tell the binary where to look for state/config
-      OPENCLAW_STATE_DIR: /home/node/.openclaw
-      OPENCLAW_WORKSPACE: /home/node/.openclaw/workspace
+      OPENCLAW_STATE_DIR: /root/.openclaw
+      OPENCLAW_WORKSPACE: /root/.openclaw/workspace
 
       # ========================================
       # AI PROVIDER API KEYS
@@ -111,8 +115,8 @@ services:
       OPENCLAW_BETA: ${OPENCLAW_BETA:-false}
 
     volumes:
-      - openclaw-config:/home/node/.openclaw
-      - openclaw-workspace:/home/node/.openclaw/workspace
+      - openclaw-config:/root/.openclaw
+      - openclaw-workspace:/root/.openclaw/workspace
 
       # Secure: Socket mount removed in favor of proxy
       # - /var/run/docker.sock:/var/run/docker.sock
@@ -120,7 +124,7 @@ services:
     depends_on:
       - docker-proxy
 
-    # FIXED: Added --allow-unconfigured flag to allow startup without config file
+    # Added --allow-unconfigured flag to allow startup without config file
     command: ["node", "dist/index.js", "gateway", "--bind", "lan", "--port", "18789", "--allow-unconfigured"]
     
     healthcheck:
