@@ -15,9 +15,14 @@ services:
     # FIX: Run as root to avoid permission issues
     user: "0:0"
     
-    # CRITICAL: Expose port so Coolify can route traffic
+    # CRITICAL: Expose port via ports section
     ports:
       - "18789:18789"
+    
+    # CRITICAL: Add label to tell Traefik which port to use
+    labels:
+      - "traefik.http.services.openclaw.loadbalancer.server.port=18789"
+      - "caddy.reverse_proxy={{upstreams 18789}}"
     
     ulimits:
       nofile:
@@ -137,11 +142,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 120s
-    
-    # Coolify labels for proper routing
-    labels:
-      - "coolify.managed=true"
-      - "coolify.version=1"
 
   docker-proxy:
     image: tecnativa/docker-socket-proxy:latest
